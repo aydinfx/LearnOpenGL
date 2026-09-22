@@ -26,9 +26,6 @@ private:
     /// @brief Height of the window in pixels
     int m_height{};
 
-    /// @brief Makes window fullscreen if set to true
-    bool m_fullscreen{};
-
     /// @brief Title displayed in the window's title bar
     std::string m_name{};
 
