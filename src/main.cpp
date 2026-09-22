@@ -6,8 +6,30 @@
 
 #include <iostream>
 
+int glfwWindowWidth = 1200;
+int glfwWindowHeight = 800;
+
+void glfwKeyCallback(GLFWwindow *window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods)
+{
+    if (key = GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+void glfwFramebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
+    // update width and height
+    glfwWindowWidth = width;
+    glfwWindowHeight = height;
+
+    // update OpenGL viewport
+    glViewport(0, 0, width, height);
+}
+
 int main()
 {
+
     // Initialize glfw
     if (!glfwInit())
     {
@@ -21,7 +43,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create window
-    GLFWwindow *window = glfwCreateWindow(1200, 800, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(glfwWindowWidth, glfwWindowHeight, "LearnOpenGL", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create glfw window\n";
@@ -42,6 +64,12 @@ int main()
 
     // Set swap interval
     glfwSwapInterval(1);
+
+    glViewport(0, 0, glfwWindowWidth, glfwWindowHeight);
+
+    // Set callbacks
+    glfwSetFramebufferSizeCallback(window, glfwFramebufferSizeCallback);
+    glfwSetKeyCallback(window, glfwKeyCallback);
 
     // Game loop
     while (!glfwWindowShouldClose(window))
