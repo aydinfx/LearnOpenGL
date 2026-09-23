@@ -39,6 +39,16 @@ private:
         }
     }
 
+    /// @brief Load OpenGL functions
+    void init_glad()
+    {
+        if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+        {
+            fprintf(stderr, "Failed to load OpenGL functions\n");
+            std::exit(EXIT_FAILURE);
+        }
+    }
+
     /// @brief Configures the properties of the OpenGL context and window
     void set_window_hints()
     {
@@ -81,6 +91,7 @@ public:
     {
         init_glfw();
         create_glfw_window();
+        init_glad();
     }
 
     /// @brief Destroys the GLFW window and terminates the GLFW library
