@@ -16,7 +16,7 @@ namespace File
 
         if (!file.is_open())
         {
-            fprintf(stderr, "failed to open file for reading: %s\n", path);
+            fprintf(stderr, "failed to open file for reading: %s\n", path.c_str());
             return std::nullopt;
         }
 
@@ -36,7 +36,7 @@ namespace File
 
         if (!file.is_open())
         {
-            fprintf(stderr, "failed to open file for writing: %s\n", path);
+            fprintf(stderr, "failed to open file for writing: %s\n", path.c_str());
             return false;
         }
 
@@ -44,7 +44,7 @@ namespace File
 
         if (!file.fail())
         {
-            fprintf(stderr, "failed to write to file: %s\n", path);
+            fprintf(stderr, "failed to write to file: %s\n", path.c_str());
             return false;
         }
 
@@ -61,7 +61,7 @@ namespace File
 
         if (!file.is_open())
         {
-            fprintf(stderr, "failed to open file for appending: %s\n", path);
+            fprintf(stderr, "failed to open file for appending: %s\n", path.c_str());
             return false;
         }
 
@@ -69,7 +69,7 @@ namespace File
 
         if (!file.fail())
         {
-            fprintf(stderr, "failed to append to file: %s\n", path);
+            fprintf(stderr, "failed to append to file: %s\n", path.c_str());
             return false;
         }
 
