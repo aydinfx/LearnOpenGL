@@ -1,84 +1,148 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <string>
+#include "glad/glad.h"
 #include "file.h"
 
-class Shader
+#include <string>
+#include <cstdio>
+
+struct Shader
 {
-private:
-    GLuint m_program;
+    GLuint program = 0;
 
-    GLuint createShader(GLenum shaderType, const char *shaderSource)
+    /// @brief Initializes the shader program from vertex and fragment shader files.
+    /// @param vertPath Path to the vertex shader source file.
+    /// @param fragPath Path to the fragment shader source file.
+    /// @return true if the shader program was successfully created and linked, false otherwise.
+    bool init(const std::string &vertPath, const std::string &fragPath)
     {
-        GLuint shader = glCreateShader(shaderType);
-        glShaderSource(shader, 1, &shaderSource, nullptr);
+        auto vertSource = File::read(vertPath);
+        if (!vertSource)
+        {
+            fprintf(stderr, "failed to read vertex shader file: %s\n", vertPath.c_str());
+            return false;
+        }
 
+        auto fragSource = File::read(fragPath);
+        if (!fragSource)
+        {
+            fprintf(stderr, "failed to read fragment shader file: %s\n", fragPath.c_str());
+            return false;
+        }
+
+        // Create and compile the vertex shader
+        GLuint vertShader = createShader(GL_VERTEX_SHADER, vertSource->c_str());
+        if (!vertShader)
+            return false;
+
+        // Create and compile the fragment shader
+        GLuint fragShader = createShader(GL_FRAGMENT_SHADER, fragSource->c_str());
+        if (!fragShader)
+            return false;
+
+        // Create the shader program
+        program = glCreateProgram();
+        if (!program)
+        {
+            fprintf(stderr, "failed to create program\n");
+            return false;
+        }
+
+        // Attach both shaders and link them into a program
+        glAttachShader(program, vertShader);
+        glAttachShader(program, fragShader);
+        glLinkProgram(program);
+
+        // Check whether the program linked successfully
+        if (!programLinked())
+            return false;
+
+        // Shaders are no longer needed after they have been linked
+        glDeleteShader(vertShader);
+        glDeleteShader(fragShader);
+
+        return true;
+    }
+
+    /// @brief Creates and compiles a shader from the provided source code.
+    /// @param type OpenGL shader type, such as GL_VERTEX_SHADER or GL_FRAGMENT_SHADER.
+    /// @param source Null-terminated shader source code.
+    /// @return shader object ID if compilation succeeds, 0 otherwise.
+    GLuint createShader(GLenum type, const char *source)
+    {
+        GLuint shader = glCreateShader(type);
+
+        if (shader == GL_INVALID_ENUM)
+        {
+            fprintf(stderr, "invalid enum type for shader\n");
+            return 0;
+        }
+
+        if (!shader)
+        {
+            fprintf(stderr, "failed to create shader\n");
+            return 0;
+        }
+
+        glShaderSource(shader, 1, &source, nullptr);
         glCompileShader(shader);
 
-        GLint success;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-        if (!success)
+        if (!shaderCompiled(shader))
         {
-            GLint infoLogLength;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-            std::string infoLog(infoLogLength, '\0');
-            glGetShaderInfoLog(shader, infoLogLength, nullptr, infoLog.data());
-
-            std::cerr << "Shader compilation failed: " << infoLog << '\n';
+            return 0;
         }
 
         return shader;
     }
 
-    void linkProgram()
+    /// @brief Checks whether a shader compiled successfully and prints the error log on failure.
+    /// @param shader OpenGL shader object ID to check.
+    /// @return true if the shader compiled successfully, false otherwise.
+    bool shaderCompiled(GLuint shader)
     {
-        glLinkProgram(m_program);
-
         GLint success;
-        glGetProgramiv(m_program, GL_LINK_STATUS, &success);
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
         if (!success)
         {
-            GLint infoLogLength;
-            glGetProgramiv(m_program, GL_INFO_LOG_LENGTH, &infoLogLength);
+            GLsizei logLength;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 
-            std::string infoLog(infoLogLength, '\0');
-            glGetProgramInfoLog(m_program, infoLogLength, nullptr, infoLog.data());
+            std::string infoLog(logLength, '\0');
+            glGetShaderInfoLog(shader, logLength, nullptr, infoLog.data());
 
-            std::cerr << "Failed to link shader program: " << infoLog << '\n';
+            fprintf(stderr, "shader compilation failed: %s\n", infoLog.c_str());
+            return false;
         }
+
+        return true;
     }
 
-public:
-    Shader(const std::string &vertShaderPath, const std::string &fragShaderPath)
+    /// @brief Checks whether the shader program linked successfully and prints the error log on failure.
+    /// @return true if the program linked successfully, false otherwise.
+    bool programLinked()
     {
-        m_program = glCreateProgram();
+        GLint success;
+        glGetProgramiv(program, GL_LINK_STATUS, &success);
 
-        auto vertSource = readFile(vertShaderPath);
-        auto fragSource = readFile(fragShaderPath);
-
-        if (!vertSource || !fragSource)
+        if (!success)
         {
-            return;
+            GLsizei logLength;
+            glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
+
+            std::string infoLog(logLength, '\0');
+            glGetProgramInfoLog(program, logLength, nullptr, infoLog.data());
+
+            fprintf(stderr, "failed to link program: %s\n", infoLog.c_str());
+            return false;
         }
 
-        GLuint vertShader = createShader(GL_VERTEX_SHADER, vertSource->c_str());
-        GLuint fragShader = createShader(GL_FRAGMENT_SHADER, fragSource->c_str());
-
-        glAttachShader(m_program, vertShader);
-        glAttachShader(m_program, fragShader);
-
-        linkProgram();
-
-        glDeleteShader(vertShader);
-        glDeleteShader(fragShader);
+        return true;
     }
 
-    void use() const
+    /// @brief Sets this shader program as the active OpenGL program.
+    void useProgram() const
     {
-        glUseProgram(m_program);
+        glUseProgram(program);
     }
 };
