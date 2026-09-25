@@ -14,7 +14,8 @@ int main()
             0.0f, 0.5f, 0.0f,
             -0.5f, -0.5f, 0.0f};
 
-    Shader shader{"shaders/basic.vert", "shaders/basic.frag"};
+    Shader shader;
+    shader.init("shaders/basic.vert", "shaders/basic.frag");
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -33,7 +34,7 @@ int main()
 
     while (!window.shouldClose())
     {
-        shader.use();
+        shader.useProgram();
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
