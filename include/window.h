@@ -1,6 +1,8 @@
 #pragma once
 
-#include <glfw/glfw3.h>
+#include "glad/glad.h"
+#include "glfw/glfw3.h"
+
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +20,7 @@ private:
     static constexpr const char *DEFAULT_NAME = "LearnOpenGL";
 
     /// @brief Pointer to the GLFW window
-    GLFWwindow *m_window{};
+    GLFWwindow *m_handle{};
 
     /// @brief Width of the window in pixels
     int m_width{};
@@ -70,15 +72,31 @@ private:
     {
         set_window_hints();
 
-        m_window = glfwCreateWindow(m_width, m_height, m_name.c_str(), nullptr, nullptr);
-        if (!m_window)
+        m_handle = glfwCreateWindow(m_width, m_height, m_name.c_str(), nullptr, nullptr);
+        if (!m_handle)
         {
             fprintf(stderr, "Failed to create GLFW window\n");
             glfwTerminate();
             std::exit(EXIT_FAILURE);
         }
 
-        glfwMakeContextCurrent(m_window);
+        glfwMakeContextCurrent(m_handle);
+        glfwSetWindowUserPointer(m_handle, this);
+    }
+
+    /// @brief  Updates the window dimensions and OpenGL viewport when the framebuffer is resized.
+    /// @param window The GLFW window whose framebuffer was resized.
+    /// @param width The new framebuffer width.
+    /// @param height The new framebuffer height.
+    static void framebufferSizeCallback(GLFWwindow *window, int width, int height)
+    {
+        Window *self =
+            static_cast<Window *>(glfwGetWindowUserPointer(window));
+
+        self->m_width = width;
+        self->m_height = height;
+
+        glViewport(0, 0, width, height);
     }
 
 public:
@@ -89,15 +107,36 @@ public:
     Window(int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT, const std::string &name = DEFAULT_NAME)
         : m_width{width}, m_height{height}, m_name{name}
     {
+        // Initialize GLFW and create the OpenGL context.
         init_glfw();
         create_glfw_window();
+
+        // Load OpenGL functions using GLAD.
         init_glad();
+
+        // Get the actual framebuffer dimensions, which may differ from
+        // the window dimensions on high-DPI displays.
+        int framebufferWidth;
+        int framebufferHeight;
+
+        glfwGetFramebufferSize(m_handle, &framebufferWidth, &framebufferHeight);
+        m_width = framebufferWidth;
+        m_height = framebufferHeight;
+
+        // Set the initial OpenGL viewport to match the framebuffer size.
+        glViewport(0, 0, m_width, m_height);
+
+        // Update the viewport and framebuffer dimensions when the window is resized.
+        glfwSetFramebufferSizeCallback(m_handle, framebufferSizeCallback);
     }
+
+    Window(const Window &) = delete;
+    Window &operator=(const Window &) = delete;
 
     /// @brief Destroys the GLFW window and terminates the GLFW library
     ~Window()
     {
-        glfwDestroyWindow(m_window);
+        glfwDestroyWindow(m_handle);
         glfwTerminate();
     }
 
@@ -119,7 +158,13 @@ public:
     /// @return true if the window should close, otherwise false
     bool shouldClose() const
     {
-        return glfwWindowShouldClose(m_window);
+        return glfwWindowShouldClose(m_handle);
+    }
+
+    void clearColor(float r = 0.2f, float g = 0.2f, float b = 0.2f)
+    {
+        glClearColor(r, g, b, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     /// @brief Processes pending GLFW events such as keyboard and mouse input
@@ -131,6 +176,12 @@ public:
     /// @brief Swaps the front and back buffers of the window
     void swapBuffers() const
     {
-        glfwSwapBuffers(m_window);
+        glfwSwapBuffers(m_handle);
+    }
+
+    /// @brief Returns the handle to window
+    GLFWwindow *getHandle() const
+    {
+        return m_handle;
     }
 };
